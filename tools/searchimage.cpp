@@ -15,9 +15,8 @@ int main(int argc, char ** argv)
 	IplImage * smallImage = cvLoadImage(argv[1], 1);
 	IplImage * bigImage = cvLoadImage(argv[2], 1);
 	IplImage * drawImage = cvLoadImage(argv[2], 1);
-	assert(bigImage->width == 1016 && bigImage->height == 638);
-	assert(bigImage->width >= smallImage->width && bigImage->height >= smallImage->height);
-	assert(bigImage->nChannels == smallImage->nChannels);
+	//assert(bigImage->width == 1016 && bigImage->height == 638);
+	assert(smallImage && bigImage && bigImage->width >= smallImage->width && bigImage->height >= smallImage->height && bigImage->nChannels == smallImage->nChannels);
 	int smallWidth = smallImage->width;
 	int smallHeight = smallImage->height;
 	int bigWidth = bigImage->width;
@@ -42,7 +41,7 @@ int main(int argc, char ** argv)
 					}
 				}
 			}
-			if(sumdiff == 0)
+			if(sumdiff/(smallWidth*smallHeight) < 5)
 			{
 				cout<<"("<<j<<","<<i<<")"<<endl;
 				cvRectangle(drawImage, cvPoint(i, j), cvPoint(i+smallWidth, j+smallHeight), CV_RGB(255,0,0),2);
