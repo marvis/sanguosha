@@ -293,6 +293,34 @@ class SGSRecg
 			return false;
 		}
 		int recog_red_num()
+		{
+			int y0 = 0;
+			int width = NUM_WID;
+			int height = imgHei;
+			string filenames[] = {"sgs_digit_red0.png", "sgs_digit_red1.png", "sgs_digit_red2.png", "sgs_digit_red3.png", "sgs_digit_red4.png",
+			"sgs_digit_red5.png", "sgs_digit_red6.png", "sgs_digit_red7.png", "sgs_digit_red8.png", "sgs_digit_red9.png"};
+
+			int num = -1;
+			for(int i = 0; i < 10; i++)
+			{
+				IplImage * tmpImg = cvLoadImage(string(SGSTMPLPATH + filenames[i]).c_str(), 1);
+				bool result = isImageSame(curImg, x0, y0, width, height, tmpImg);
+				cvReleaseImage(&tmpImg);
+				if(result)
+				{
+					num = i;
+					break;
+				}
+			}
+			if(num == -1)
+			{
+				cerr<<"unknown number"<<endl;
+				saveImage(NUM_WID, infile+".unknown_number.png");
+			}
+			assert(refresh_x0_and_curImg(NUM_WID));
+			return num;
+
+		}
 		int recog_num()
 		{
 			int y0 = 0;
@@ -862,8 +890,25 @@ class SGSRecg
 				oss << "受到";
 				assert(refresh_x0_and_curImg(CHN_WID, 2));
 				int num1 = recog_red_num();
-				oss << num1 << "点伤害, 体力值为";
-				assert(refresh_x0_and_curImg(CHN_WID, 8));
+				oss << num1 << "点";//"伤害, 体力值为";
+				assert(refresh_x0_and_curImg(CHN_WID));
+				if(isImageSame(curImg, x0, "sgs_chinese_red_lei.png"))
+				{
+					oss<<"雷属性伤害, 体力值为";
+					assert(refresh_x0_and_curImg(CHN_WID, 10));
+				}
+				else if(isImageSame(curImg, x0, "sgs_chinese_red_shang.png"))
+				{
+					oss<<"伤害, 体力值为";
+					assert(refresh_x0_and_curImg(CHN_WID, 7));
+				}
+				else
+				{
+					cerr<<"unknow damage type"<<endl;
+					saveImage(CHN_WID, infile + ".unknown_damage_type.png");
+					oss<<"??属性伤害, 体力值为";
+					assert(refresh_x0_and_curImg(CHN_WID, 10));
+				}
 				int num2 = recog_red_num();
 				oss<<num2;
 				next = oss.str();
