@@ -1,4 +1,5 @@
 all:
+	#g++ -o avgimgdiff avgimgdiff.cpp `pkg-config --cflags --libs opencv`
 	g++ -o image_recog image_recog.cpp `pkg-config --cflags --libs opencv`
 	#g++ -o lastplay lastplay.cpp `pkg-config --cflags --libs opencv`
 	#g++ -o avgcolor avgcolor.cpp `pkg-config --cflags --libs opencv`
