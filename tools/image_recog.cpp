@@ -106,7 +106,7 @@ void lastplay(IplImage * screenImg, IplImage * & lastImg1, IplImage * &lastImg2)
 }
 
 // width and height here is used for size check
-bool isImageSame(IplImage * bigImage, int x0, int y0, int width, int height, IplImage * smallImage, double thresh = 15)
+bool isImageSame(IplImage * bigImage, int x0, int y0, int width, int height, IplImage * smallImage, double thresh = 20)
 {
 	assert(smallImage && bigImage && bigImage->width >= smallImage->width && bigImage->height >= smallImage->height && bigImage->nChannels == smallImage->nChannels);
 	assert(smallImage->width == width && smallImage->height == height);
@@ -131,7 +131,7 @@ bool isImageSame(IplImage * bigImage, int x0, int y0, int width, int height, Ipl
 }
 
 // assume y0 = 0
-bool isImageSame(IplImage * bigImage, int x0, string filename, double thresh = 15)
+bool isImageSame(IplImage * bigImage, int x0, string filename, double thresh = 20)
 {
 	IplImage * smallImage = cvLoadImage((SGSTMPLPATH + filename).c_str(), 1);
 	if(!smallImage)
@@ -565,10 +565,45 @@ class SGSRecg
 			return false;
 		}
 	
-		string recog_sill(string filename)
+		string recog_skill(string filename)
 		{
 			string skillname;
 			assert(refresh_x0_and_curImg(QUOTE_WID));
+			if(isImageSame(curImg, x0, "sgs_skill_name_lie.png"))
+			{
+				assert(refresh_x0_and_curImg(QUOTE_WID));
+				if(isImageSame(curImg, x0, "sgs_skill_name_ren.png"))
+				{
+					skillname = "烈刃";
+					assert(refresh_x0_and_curImg(QUOTE_WID));
+				}
+				else
+				{
+					skillname = "烈弓";
+					assert(refresh_x0_and_curImg(QUOTE_WID));
+				}
+			}
+			else if(isImageSame(curImg, x0, "sgs_skill_name_lei.png"))
+			{
+				skillname = "雷击";
+				assert(refresh_x0_and_curImg(QUOTE_WID, 2));
+			}
+			else if(isImageSame(curImg, x0, "sgs_skill_name_gang.png"))
+			{
+				skillname = "刚烈";
+				assert(refresh_x0_and_curImg(QUOTE_WID, 2));
+			}
+			else if(isImageSame(curImg, x0, "sgs_skill_name_fan.png"))
+			{
+				skillname = "反馈";
+				assert(refresh_x0_and_curImg(QUOTE_WID, 2));
+			}
+			else
+			{
+				cerr<<"unknown skill name"<<endl;
+				saveImage(CHN_WID, filename);
+			}
+			return "\"" + skillname + "\"";
 		}
 		string recog_card(string filename)
 		{
@@ -984,6 +1019,7 @@ class SGSRecg
 			{
 				next = "发动了武将技能";
 				assert(refresh_x0_and_curImg(CHN_WID, 7));
+				next += recog_skill(infile + ".skill.png");
 			}
 			else if(isWord(curImg, x0, "SGS_CHN_HUO"))
 			{
