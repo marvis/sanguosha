@@ -9,11 +9,6 @@ using namespace cv;
 
 IplImage * tmplHistBkgImg = 0;
 
-CvScalar playerColor = CV_RGB(46, 67, 24);
-CvScalar cardColor = CV_RGB(100, 103, 24);
-CvScalar skillColor = CV_RGB(100, 103, 24);
-CvScalar normalColor = CV_RGB(98, 94, 68);
-
 IplImage * cropImage(IplImage * src, int x, int y, int width, int height)
 {
 	cvSetImageROI(src, cvRect(x, y, width , height));
