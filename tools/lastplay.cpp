@@ -135,7 +135,7 @@ int main(int argc, char ** argv)
 				sumVals[j] += diffval;
 			}
 		}
-		//cout<<sumVals[j]<<endl;
+		cout<<sumVals[j]<<endl;
 	}
 	int thresh = 50;
 	for(int j = height - 1; j >= 0; j--)

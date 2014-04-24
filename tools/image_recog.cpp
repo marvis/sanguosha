@@ -47,7 +47,7 @@ double avgImgDiff(IplImage * img1, IplImage * img2)
 }
 
 // thresh for sumVals of horizontal line
-void lastplay(IplImage * screenImg, IplImage * & lastImg1, IplImage * &lastImg2, double thresh = 50)
+void lastplay(IplImage * screenImg, IplImage * & lastImg1, IplImage * &lastImg2, double thresh = 100)
 {
 	IplImage * tmplHistBkgImg = cvLoadImage(SGSTMPLPATH"history_background.png",1);
 	IplImage * histBkgImg = cropImage(screenImg, 808, 120, 195, 223);
@@ -82,6 +82,12 @@ void lastplay(IplImage * screenImg, IplImage * & lastImg1, IplImage * &lastImg2,
 		{
 			int y1 = j;
 			while(j >= 0 && sumVals[j] > thresh) j--;
+			// tolerant one dark line
+			if(j - 1 >= 0 && sumVals[j-1] > thresh)
+			{
+				j--;
+				while(j >= 0 && sumVals[j] > thresh) j--;
+			}
 			int y0 = j+1;
 			int count = y1 - y0 + 1;
 			if(count >= 10 && count <= 12)
@@ -201,6 +207,7 @@ class SGSRecg
 			img2 = _img2;
 			leftside = 3;
 			rightside1 = find_right_boundary(img1);
+			rightside2 = 0;
 			if(img2) rightside2 = find_right_boundary(img2);
 			imgHei = 10;
 			assert(img1->height = imgHei);
@@ -476,6 +483,24 @@ class SGSRecg
 				assert(refresh_x0_and_curImg(CHN_WID, 2));
 				assert(refresh_x0_and_curImg(QUOTE_WID));
 			}
+			else if(isImageSame(curImg, x0, "sgs_skill_name_guan_xing.png"))
+			{
+				skillname = "观星";
+				assert(refresh_x0_and_curImg(CHN_WID, 2));
+				assert(refresh_x0_and_curImg(QUOTE_WID));
+			}
+			else if(isImageSame(curImg, x0, "sgs_skill_name_duo.png"))
+			{
+				skillname = "度势";
+				assert(refresh_x0_and_curImg(CHN_WID, 2));
+				assert(refresh_x0_and_curImg(QUOTE_WID));
+			}
+			else if(isImageSame(curImg, x0, "sgs_skill_name_ju_xiang.png"))
+			{
+				skillname = "巨象";
+				assert(refresh_x0_and_curImg(CHN_WID, 2));
+				assert(refresh_x0_and_curImg(QUOTE_WID));
+			}
 			else if(isImageSame(curImg, x0, "sgs_skill_name_lei.png"))
 			{
 				skillname = "雷击";
@@ -592,6 +617,11 @@ class SGSRecg
 				cardname = "决斗";
 				assert(refresh_x0_and_curImg(CHN_WID,2));
 			}
+			else if(isImageSame(curImg, x0, "sgs_card_name_da_wan.png"))
+			{
+				cardname = "大宛";
+				assert(refresh_x0_and_curImg(CHN_WID,2));
+			}
 			else if(isImageSame(curImg, x0, "sgs_card_name_chi_tu.png"))
 			{
 				cardname = "赤兔";
@@ -608,6 +638,16 @@ class SGSRecg
 				assert(refresh_x0_and_curImg(CHN_WID,2));
 			}
 			// Three words
+			else if(isImageSame(curImg, x0, "sgs_card_name_ren.png"))
+			{
+				cardname = "仁王盾";
+				assert(refresh_x0_and_curImg(CHN_WID, 3));
+			}
+			else if(isImageSame(curImg, x0, "sgs_card_name_ba_gua.png"))
+			{
+				cardname = "八卦阵";
+				assert(refresh_x0_and_curImg(CHN_WID, 3));
+			}
 			else if(isImageSame(curImg, x0, "sgs_card_name_wu_liu.png"))
 			{
 				cardname = "吴六剑";
@@ -634,6 +674,11 @@ class SGSRecg
 				assert(refresh_x0_and_curImg(CHN_WID, 3));
 			}
 			// Four words
+			else if(isImageSame(curImg, x0, "sgs_card_name_bai.png"))
+			{
+				cardname = "白银狮子";
+				assert(refresh_x0_and_curImg(CHN_WID, 4));
+			}
 			else if(isImageSame(curImg, x0, "sgs_card_name_wan.png"))
 			{
 				cardname = "万箭齐发";
@@ -1064,6 +1109,14 @@ class SGSRecg
 						saveImage(CHN_WID, infile + ".unknown_action.png");
 					}
 				}
+				else if(isImageSame(curImg, x0, "sgs_present_shou_pai.png"))
+				{
+					next += "手牌";
+					assert(refresh_x0_and_curImg(CHN_WID, 2));
+					next += recog_card(infile + ".card.png");
+					next += "被弃置";
+					assert(refresh_x0_and_curImg(CHN_WID, 3));
+				}
 				else
 				{
 					saveImage(CHN_WID, infile + ".unknown_action.png");
@@ -1319,6 +1372,20 @@ class SGSRecg
 				next += "阵亡";
 				assert(refresh_x0_and_curImg(CHN_WID, 2));
 			}
+			else if(isImageSame(curImg, x0, "sgs_present_shi_xiao.png"))
+			{
+				next = "失去了1装备";
+				assert(refresh_x0_and_curImg(CHN_WID, 3));
+				assert(refresh_x0_and_curImg(NUM_WID));
+				assert(refresh_x0_and_curImg(CHN_WID, 2));
+				next += recog_card(infile + ".card.png");
+			}
+			else if(isImageSame(curImg, x0, "sgs_present_bei.png"))
+			{
+				next = "被弃掉卡牌";
+				assert(refresh_x0_and_curImg(CHN_WID, 5));
+				next += recog_card(infile + ".card.png");
+			}
 			else
 			{
 				saveImage(CHN_WID, infile + ".unknown.png");
@@ -1344,6 +1411,9 @@ int main(int argc, char ** argv)
 	IplImage * screenImg = cvLoadImage(argv[1], 1);
 	IplImage * lastImg1 = 0, * lastImg2 = 0;
 	lastplay(screenImg, lastImg1, lastImg2);
+	if(lastImg1) cvSaveImage("out1.png", lastImg1);
+	if(lastImg2) cvSaveImage("out2.png", lastImg2);
+
 	if(lastImg1 == 0 && lastImg2 == 0)
 	{
 		cout<<"Invalid data"<<endl;
@@ -1353,8 +1423,6 @@ int main(int argc, char ** argv)
 	string str = sgs.recog();
 	cout<<str<<endl;
 
-	cvSaveImage("out1.png", lastImg1);
-	if(lastImg2) cvSaveImage("out2.png", lastImg2);
 	cvReleaseImage(&screenImg);
 	cvReleaseImage(&lastImg1);
 	if(lastImg2) cvReleaseImage(&lastImg2);
