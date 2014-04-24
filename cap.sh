@@ -1,4 +1,4 @@
-win_id=39483
+win_id=43049
 while [ 1 ];
 do
 	file=screen$[$(ls screen*.png | wc -l)+1].png
