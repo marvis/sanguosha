@@ -24,12 +24,12 @@ string num2str(int num)
 	return oss.str();
 }
 
-double avgImgDiff(IplImage * img1, IplImage * img2)
+double avgImgDiff(IplImage * image1, IplImage * image2)
 {
-	assert(img1->width == img2->width && img1->height == img2->height && img1->nChannels == img2->nChannels);
-	int width = img1->width;
-	int height = img1->height;
-	int nchannels = img1->nChannels;
+	assert(image1->width == image2->width && image1->height == image2->height && image1->nChannels == image2->nChannels);
+	int width = image1->width;
+	int height = image1->height;
+	int nchannels = image1->nChannels;
 	double sumdiff = 0;
 	for(int y = 0; y < height; y++)
 	{
@@ -37,8 +37,8 @@ double avgImgDiff(IplImage * img1, IplImage * img2)
 		{
 			for(int c = 0; c < nchannels; c++)
 			{
-				double val1 = CV_IMAGE_ELEM(img1, unsigned char, y, x*nchannels + c);
-				double val2 = CV_IMAGE_ELEM(img2, unsigned char, y, x*nchannels + c);
+				double val1 = CV_IMAGE_ELEM(image1, unsigned char, y, x*nchannels + c);
+				double val2 = CV_IMAGE_ELEM(image2, unsigned char, y, x*nchannels + c);
 				sumdiff += ABS(val1-val2);
 			}
 		}
@@ -47,7 +47,7 @@ double avgImgDiff(IplImage * img1, IplImage * img2)
 }
 
 // thresh for sumVals of horizontal line
-void lastplay(IplImage * screenImg, IplImage * & lastImg1, IplImage * &lastImg2, double thresh = 100)
+void lastplay(IplImage * screenImg, vector<IplImage *> & lastImgs, double thresh = 100)
 {
 	IplImage * tmplHistBkgImg = cvLoadImage(SGSTMPLPATH"history_background.png",1);
 	IplImage * histBkgImg = cropImage(screenImg, 808, 120, 195, 223);
@@ -75,7 +75,7 @@ void lastplay(IplImage * screenImg, IplImage * & lastImg1, IplImage * &lastImg2,
 			}
 		}
 	}
-	bool isok = false;
+
 	for(int j = height - 1; j >= 0; j--)
 	{
 		if(sumVals[j] > thresh)
@@ -83,36 +83,21 @@ void lastplay(IplImage * screenImg, IplImage * & lastImg1, IplImage * &lastImg2,
 			int y1 = j;
 			while(j >= 0 && sumVals[j] > thresh) j--;
 			// tolerant one dark line
-			if(j - 1 >= 0 && sumVals[j-1] > thresh)
+			while(j - 2 >= 0 && sumVals[j-2] > thresh)
 			{
-				j--;
+				j -= 2;
 				while(j >= 0 && sumVals[j] > thresh) j--;
 			}
 			int y0 = j+1;
 			int count = y1 - y0 + 1;
-			if(count >= 10 && count <= 12)
+			int numImgs = (count + 2)/12;
+			for(int n = 0; n < numImgs; n++)
 			{
-				lastImg1 = cropImage(diffImg, 0, y0, width, 10);
-				lastImg2 = 0;
+				IplImage * lastImg = cropImage(diffImg, 0, y0 + n*12, width, 10);
+				lastImgs.push_back(lastImg);
 			}
-			else if(count >= 22 && count <= 24)
-			{
-				lastImg1 = cropImage(diffImg, 0, y0, width, 10);
-				lastImg2 = cropImage(diffImg, 0, y0+12, width, 10);
-			}
-			else 
-			{
-				lastImg1 = 0;
-				lastImg2 = 0;
-			}
-			isok = true;
 			break;
 		}
-	}
-	if(!isok)
-	{
-		lastImg1 = 0;
-		lastImg2 = 0;
 	}
 	cvReleaseImage(&histBkgImg);
 	cvReleaseImage(&tmplHistBkgImg);
@@ -186,50 +171,51 @@ int find_right_boundary(IplImage * image)
 #define QUOTE_WID 5 // 桃杏梅方宽度
 #define COMMA_WID 3 // 逗号宽度
 #define SEP_WID 3 // 空格分隔符宽度
-class SGSRecg
+class SGSRecog
 {
 	public:
+		vector<IplImage *> imgList;
+
 		int leftside;
-		int rightside1;
-		int rightside2;
-		IplImage * img1;
-		IplImage * img2;
-		IplImage * curImg;
+		vector<int> rightsides;
+
 		int x0;
-		int imgHei;
-		string result;
-		bool isImageChanged;
+		IplImage * curImg;
+		int curId;
+
+		int m_height;
 		bool isfinished;
 
-		SGSRecg(IplImage * _img1, IplImage * _img2)
+		SGSRecog(vector<IplImage *> lastImgs)
 		{
-			img1 = _img1;
-			img2 = _img2;
+			imgList = lastImgs;
+			rightsides.resize(imgList.size());
 			leftside = 3;
-			rightside1 = find_right_boundary(img1);
-			rightside2 = 0;
-			if(img2) rightside2 = find_right_boundary(img2);
-			imgHei = 10;
-			assert(img1->height = imgHei);
-			if(img2) assert(img2->height == imgHei);
+			m_height = 10;
+
+			for(int i = 0; i < imgList.size(); i++)
+			{
+				rightsides[i] = find_right_boundary(imgList[i]);
+				assert(imgList[i]->height == m_height);
+			}
 
 			x0 = leftside;
-			curImg = img1;
-			isImageChanged = false;
+			curImg = imgList[0];
+			curId = 0;
 			isfinished = false;
 		}
 
 		bool isFirstShow()
 		{
 			IplImage * tmpImg = cvLoadImage(SGSTMPLPATH"sgs_present_hao.png", 1);
-			bool result = isImageSame(img1, leftside + NUM_WID, 0, CHN_WID, imgHei, tmpImg);
+			bool result = isImageSame(imgList[0], leftside + NUM_WID, 0, CHN_WID, m_height, tmpImg);
 			cvReleaseImage(&tmpImg);
 			return result;
 		}
 		int FirstShow_who()
 		{
 			int y0 = 0;
-			int height = imgHei;
+			int height = m_height;
 			string filenames[] = {"sgs_digit_1.png", "sgs_digit_2.png", "sgs_digit_3.png", "sgs_digit_4.png",
 			"sgs_digit_5.png", "sgs_digit_6.png", "sgs_digit_7.png", "sgs_digit_8.png"};
 			int id = 0;
@@ -255,7 +241,7 @@ class SGSRecg
 		string FirstShow_recog()
 		{
 			int x0 = leftside;
-			IplImage * curImg = img1;
+			IplImage * curImg = imgList[0];
 			int who = FirstShow_who();
 			ostringstream oss;
 			oss<<who<<"号位首先明置武将牌, 摸2张牌作为奖励";
@@ -274,48 +260,26 @@ class SGSRecg
 		{
 			if(isfinished) return false;
 			assert(width > 0);
-			if(!isImageChanged)
+			assert(curId <= imgList.size() - 1);
+
+			if(x0 + width <= rightsides[curId])
 			{
-				if(x0 + width < rightside1)
-				{
-					x0 = x0 + width;
-					return true;
-				}
-				else if(img2)
-				{
-					x0 = leftside;
-					curImg = img2;
-					isImageChanged = true;
-					return true;
-				}
-				else if(!isfinished)
-				{
-					isfinished = true;
-					return true;
-				}
-				else return false;
+				x0 = x0 + width;
 			}
-			else
+			else if(curId + 1 <= imgList.size() - 1)
 			{
-				if(x0 + width < rightside2)
-				{
-					x0 = x0 + width;
-					return true;
-				}
-				else if(!isfinished)
-				{
-					isfinished = true;
-					return true;
-				}
-				else return false;
+				x0 = leftside;
+				curId++;
+				curImg = imgList[curId];
 			}
-			return false;
+			else isfinished = true;
+			return true;
 		}
 		int recog_green_num()
 		{
 			int y0 = 0;
 			int width = NUM_WID;
-			int height = imgHei;
+			int height = m_height;
 			string filenames[] = {"sgs_digit_green0.png", "sgs_digit_green1.png", "sgs_digit_green2.png", "sgs_digit_green3.png", "sgs_digit_green4.png",
 			"sgs_digit_green5.png", "sgs_digit_green6.png", "sgs_digit_green7.png", "sgs_digit_green8.png", "sgs_digit_green9.png"};
 
@@ -344,7 +308,7 @@ class SGSRecg
 		{
 			int y0 = 0;
 			int width = NUM_WID;
-			int height = imgHei;
+			int height = m_height;
 			string filenames[] = {"sgs_digit_red0.png", "sgs_digit_red1.png", "sgs_digit_red2.png", "sgs_digit_red3.png", "sgs_digit_red4.png",
 			"sgs_digit_red5.png", "sgs_digit_red6.png", "sgs_digit_red7.png", "sgs_digit_red8.png", "sgs_digit_red9.png"};
 
@@ -373,7 +337,7 @@ class SGSRecg
 		{
 			int y0 = 0;
 			int width = NUM_WID;
-			int height = imgHei;
+			int height = m_height;
 			string filenames[] = {"sgs_digit_0.png", "sgs_digit_1.png", "sgs_digit_2.png", "sgs_digit_3.png", "sgs_digit_4.png",
 			"sgs_digit_5.png", "sgs_digit_6.png", "sgs_digit_7.png", "sgs_digit_8.png", "sgs_digit_9.png"};
 
@@ -401,7 +365,7 @@ class SGSRecg
 		{
 			int y0 = 0;
 			int width = CHN_WID;
-			int height = imgHei;
+			int height = m_height;
 			string filenames[] = {"sgs_who_one.png", "sgs_who_two.png", "sgs_who_three.png", "sgs_who_four.png",
 			"sgs_who_five.png", "sgs_who_six.png", "sgs_who_seven.png", "sgs_who_eight.png"};
 			string names[] = {"一", "二", "三", "四", "五", "六", "七", "八"};
@@ -443,8 +407,8 @@ class SGSRecg
 		{
 			if(x0 + width > curImg->width) width = curImg->width - x0;
 			int nchannels = curImg->nChannels;
-			IplImage * tmpImg = cvCreateImage(cvSize(width, imgHei), IPL_DEPTH_8U, nchannels);
-			for(int j = 0; j < imgHei; j++)
+			IplImage * tmpImg = cvCreateImage(cvSize(width, m_height), IPL_DEPTH_8U, nchannels);
+			for(int j = 0; j < m_height; j++)
 			{
 				for(int i = 0; i < width; i++)
 				{
@@ -986,15 +950,17 @@ class SGSRecg
 			int card_num_steps[] = {6, 8, 4, 12};
 			for(int i = 0; i < 4; i++)
 			{
-				int x1 = x0 + card_num_steps[i];
-				IplImage * curImg1 = curImg;
-				if(x1 >= rightside1)
+				int _x0 = x0 + card_num_steps[i];
+				IplImage * _curImg = curImg;
+				if(_x0 > rightsides[curId])
 				{
-					x1 = leftside;
-					curImg1 = img2;
+					_x0 = leftside;
+					if(curId + 1 <= imgList.size() - 1)
+						_curImg = imgList[curId+1];
+					else continue;
 				}
-				if(!curImg1) continue;
-				if(isImageSame(curImg1, x1, "sgs_card_suffix.png"))
+
+				if(isImageSame(_curImg, _x0, "sgs_card_suffix.png"))
 				{
 					string color = "";
 					if(cardtype == "黑桃" || cardtype == "梅花") color = "black";
@@ -1103,7 +1069,7 @@ class SGSRecg
 		string recog()
 		{
 			x0 = leftside;
-			curImg = img1;
+			curImg = imgList[0];
 			if(isImageSame(curImg, x0+NUM_WID, "sgs_present_hao.png")) return FirstShow_recog();
 			else if(isImageSame(curImg, x0+CHN_WID, "sgs_present_hao.png"))	return recog_other();
 
@@ -1497,7 +1463,6 @@ class SGSRecg
 							{
 								cerr<<"unknown skill"<<endl;
 							}
-
 						}
 						else if(isImageSame(curImg, x0, "sgs_special_sep.png"))
 						{
@@ -1514,9 +1479,12 @@ class SGSRecg
 								assert(refresh_x0_and_curImg(CHN_WID, 5));
 								assert(refresh_x0_and_curImg(SEP_WID)); // another strange here
 								next += recog_who(false);
-								for(int i = 0; i < ncards; i++)
+								if(!isfinished)
 								{
-									next += recog_card();
+									for(int i = 0; i < ncards; i++)
+									{
+										next += recog_card();
+									}
 								}
 							}
 							else
@@ -1889,21 +1857,25 @@ int main(int argc, char ** argv)
 	}
 	infile = argv[1];
 	IplImage * screenImg = cvLoadImage(argv[1], 1);
-	IplImage * lastImg1 = 0, * lastImg2 = 0;
-	lastplay(screenImg, lastImg1, lastImg2);
-	if(lastImg1) cvSaveImage("out1.png", lastImg1);
-	if(lastImg2) cvSaveImage("out2.png", lastImg2);
-
-	if(lastImg1 == 0 && lastImg2 == 0)
+	vector<IplImage *> lastImgs;
+	lastplay(screenImg, lastImgs);
+	if(lastImgs.empty())
 	{
 		cerr<<"Invalid data"<<endl;
 		return 0;
 	}
-	SGSRecg sgs(lastImg1, lastImg2);
+	for(int i = 0; i < lastImgs.size(); i++)
+	{
+		cvSaveImage(("out"+num2str(i+1)+".png").c_str(), lastImgs[i]);
+	}
+
+	SGSRecog sgs(lastImgs);
 	string str = sgs.recog();
 	cout<<str<<endl;
 
 	cvReleaseImage(&screenImg);
-	cvReleaseImage(&lastImg1);
-	if(lastImg2) cvReleaseImage(&lastImg2);
+	for(int i = 0; i < lastImgs.size(); i++)
+	{
+		cvReleaseImage(&(lastImgs[i]));
+	}
 }
