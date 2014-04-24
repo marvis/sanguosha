@@ -135,16 +135,18 @@ int main(int argc, char ** argv)
 				sumVals[j] += diffval;
 			}
 		}
+		//cout<<sumVals[j]<<endl;
 	}
+	int thresh = 50;
 	for(int j = height - 1; j >= 0; j--)
 	{
-		if(sumVals[j] != 0)
+		if(sumVals[j] > thresh)
 		{
 			int y1 = j;
-			while(j >= 0 && sumVals[j] != 0) j--;
+			while(j >= 0 && sumVals[j] > thresh) j--;
 			int y0 = j+1;
 			int count = y1 - y0 + 1;
-			if(count >= 11 && count <= 12)
+			if(count >= 10 && count <= 12)
 			{
 				ostringstream oss;
 				oss<<argv[1]<<".lastplay.png";
