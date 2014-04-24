@@ -1,15 +1,13 @@
 win_id=43049
-pre_text=""
+i=1
 while [ 1 ];
 do
-	file=screen$[$(ls screen*.png | wc -l)+1].png
-	screencapture -o -l$win_id $file
-	text=`./tools/image_recog $file`
-	if [ "$text" != "$pre_text" ]; then
-		pre_text=$text
-		echo $text
-	else
-		rm $file
+	screencapture -o -l$win_id screen.png
+	./tools/image_recog screen.png 1> /dev/null 2>out; 
+	err=`cat out`; 
+	if [ "$err" != "" ]; then
+		cp screen.png screen$i.png
+		i=$[i+1];
 	fi
-	sleep 2
+	sleep 1
 done

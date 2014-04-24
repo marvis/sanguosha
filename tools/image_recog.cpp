@@ -501,6 +501,9 @@ class SGSRecg
 			ADD_SKILL("sgs_skill_name_bei_ge.png", "悲歌", 2)
 			ADD_SKILL("sgs_skill_name_ming.png", "名士", 2)
 			ADD_SKILL("sgs_skill_name_wei.png", "帷幕", 2)
+			ADD_SKILL("sgs_skill_name_hong.png", "红颜", 2)
+			ADD_SKILL("sgs_skill_name_kan.png", "看破", 2)
+			ADD_SKILL("sgs_skill_name_jian_xiong.png", "奸雄", 2)
 			else if(isImageSame(curImg, x0, "sgs_skill_name_ba.png"))
 			{
 				skillname = "八阵";
@@ -1093,7 +1096,7 @@ class SGSRecg
 				next = "武将牌横置";
 				assert(refresh_x0_and_curImg(CHN_WID, 5));
 			}
-			if(!isfinished) cout<<"Not finished"<<endl;
+			if(!isfinished) cerr<<"Not finished"<<endl;
 			return who + next;
 		}
 
@@ -1127,14 +1130,27 @@ class SGSRecg
 				}
 				else if(isImageSame(curImg, x0, "sgs_special_left_quote.png"))
 				{
-					//next += recog_skill(infile + ".skill.png");
-					next += "\"遗计\"获得2张卡牌";
-					assert(refresh_x0_and_curImg(QUOTE_WID));
-					assert(refresh_x0_and_curImg(CHN_WID, 2));
-					assert(refresh_x0_and_curImg(QUOTE_WID));
-					assert(refresh_x0_and_curImg(CHN_WID, 2));
-					assert(refresh_x0_and_curImg(NUM_WID));
-					assert(refresh_x0_and_curImg(CHN_WID, 3));
+					string skill =  recog_skill(infile + ".skill.png");
+					if(skill == "\"遗计\"")
+					{
+						next += skill + "获得2张卡牌";
+						assert(refresh_x0_and_curImg(CHN_WID, 2));
+						assert(refresh_x0_and_curImg(NUM_WID));
+						assert(refresh_x0_and_curImg(CHN_WID, 3));
+					}
+					else if(skill == "\"洛神\"")
+					{
+						next += skill + "获得";
+						assert(refresh_x0_and_curImg(CHN_WID, 2));
+						int ncards = recog_num();
+						next += num2str(ncards);
+						next += "张卡牌";
+						assert(refresh_x0_and_curImg(CHN_WID, 3));
+						for(int i = 0; i < ncards; i++)
+						{
+							next += recog_card();
+						}
+					}
 				}
 				else if(isImageSame(curImg, x0, "sgs_card_prefix.png"))
 				{
@@ -1183,6 +1199,11 @@ class SGSRecg
 				next = "受到火攻, 展示了一张卡牌";
 				assert(refresh_x0_and_curImg(CHN_WID, 12));
 				next += recog_card(infile+".card.png");
+			}
+			else if(isImageSame(curImg, x0, "sgs_damage_zhen_wang.png"))
+			{
+				next = "阵亡";
+				assert(refresh_x0_and_curImg(CHN_WID, 2));
 			}
 			else if(isImageSame(curImg, x0, "sgs_damage_shi.png"))
 			{
@@ -1323,6 +1344,7 @@ class SGSRecg
 						next += "技能";
 						assert(refresh_x0_and_curImg(CHN_WID, 2));
 						next += "["+recog_card_name()+"]";
+						assert(refresh_x0_and_curImg(CHN_WID, 1));
 						next += "被触发";
 						assert(refresh_x0_and_curImg(CHN_WID, 3));
 					}
@@ -1410,7 +1432,7 @@ class SGSRecg
 					{
 						next += "技能";
 						assert(refresh_x0_and_curImg(CHN_WID, 2));
-						if(isImageSame(curImg, x0, "sgs_special_left_quote2.png"))
+						if(isImageSame(curImg, x0, "sgs_special_left_quote.png") || isImageSame(curImg, x0, "sgs_special_left_quote2.png"))
 						{
 							string skill = recog_skill(infile + ".skill.png");
 							next += skill;
@@ -1462,6 +1484,20 @@ class SGSRecg
 								next += recog_card();
 
 							}
+							else if(skill == "\"看破\"")
+							{
+								next += ",将";
+								assert(refresh_x0_and_curImg(COMMA_WID));
+								assert(refresh_x0_and_curImg(CHN_WID, 1));
+								next += recog_card();
+								next += "当无懈可击使用";
+								assert(refresh_x0_and_curImg(CHN_WID, 7));
+							}
+							else 
+							{
+								cerr<<"unknown skill"<<endl;
+							}
+
 						}
 						else if(isImageSame(curImg, x0, "sgs_special_sep.png"))
 						{
@@ -1516,7 +1552,7 @@ class SGSRecg
 						}
 						else
 						{
-							cout<<"unknow skill : "<<skill<<endl;
+							cerr<<"unknow skill : "<<skill<<endl;
 						}
 					}
 					else if(isImageSame(curImg, x0, "sgs_present_zhu_lian.png"))
@@ -1532,9 +1568,14 @@ class SGSRecg
 				}
 				else if(isImageSame(curImg, x0, "sgs_special_left_quote2.png"))
 				{
-					next += recog_skill();
-					next += "技能";
+					string skill = recog_skill();
+					next += skill + "技能";
 					assert(refresh_x0_and_curImg(CHN_WID, 2));
+					if(skill == "\"红颜\"")
+					{
+						next += ", 黑桃视为红桃";
+						assert(refresh_x0_and_curImg(CHN_WID, 7));
+					}
 				}
 			}
 			else if(isImageSame(curImg, x0, "sgs_present_huo_de.png"))
@@ -1701,11 +1742,11 @@ class SGSRecg
 						next += "主将";
 						assert(refresh_x0_and_curImg(CHN_WID, 2));
 					}
-					/*else if(isImageSame(curImg, x0, "sgs_present_fu.png"))
-					  {
-					  next += "副将";
-					  assert(refresh_x0_and_curImg(CHN_WID, 2));
-					  }*/	
+					else if(isImageSame(curImg, x0, "sgs_present_fu.png"))
+					{
+						next += "副将";
+						assert(refresh_x0_and_curImg(CHN_WID, 2));
+					}
 					else
 					{
 						cerr<<"unknown target"<<endl;
@@ -1831,7 +1872,7 @@ class SGSRecg
 
 			if(!isfinished)
 			{
-				cout<<"not finished"<<endl;
+				cerr<<"not finished"<<endl;
 			}
 			ostringstream oss;
 			oss<<who<<next;
@@ -1855,7 +1896,7 @@ int main(int argc, char ** argv)
 
 	if(lastImg1 == 0 && lastImg2 == 0)
 	{
-		cout<<"Invalid data"<<endl;
+		cerr<<"Invalid data"<<endl;
 		return 0;
 	}
 	SGSRecg sgs(lastImg1, lastImg2);
